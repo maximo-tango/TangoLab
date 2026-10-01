@@ -1,0 +1,1 @@
+const P='maximo-tango:';export const save=(k,v)=>localStorage.setItem(P+k,JSON.stringify(v));export const load=(k,d=null)=>{try{const v=localStorage.getItem(P+k);return v?JSON.parse(v):d}catch{return d}}
