@@ -1,6 +1,6 @@
 import{mount}from'../../core/mount.js';
 import{CALENDAR_ID,API_KEY,TZ}from'../../config.js';
-import{events as local}from'../../data/classes.js';
+import{loadCalendarMarkdown}from'../../data/classes.js';
 import{sessions,sec,today}from'../../data/curriculum.js';
 
 const CATS={competition:'KTC·대회',technique:'실전테크닉',essential:'에센셜',tanguera:'땅게라',training:'트레이닝·연습',practica:'쁘락',show:'공연·모임',off:'휴강',other:'기타'};
@@ -8,12 +8,15 @@ const classify=t=>/휴강/.test(t)?'off':/KTC|대회/.test(t)?'competition':/실
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const pad=n=>String(n).padStart(2,'0');
 const ymd=d=>d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
-const fallback=()=>local.map(([date,title,time,cat])=>({date,time,title,cat:classify(title)==='other'?cat:classify(title)}));
+const fallback=async()=>{
+  const events=await loadCalendarMarkdown();
+  return events.map(([date,title,time,cat])=>({date,time,title,cat:classify(title)==='other'?cat:classify(title)}));
+};
 
 const cache={};
 async function load(from,to){
   const k=from+to;if(cache[k])return cache[k];
-  if(!API_KEY)return cache[k]={ev:fallback(),src:'local'};
+  if(!API_KEY)return cache[k]={ev:await fallback(),src:'local'};
   try{
     const u=`https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(CALENDAR_ID)}/events?key=${API_KEY}&singleEvents=true&orderBy=startTime&maxResults=2500&timeZone=${encodeURIComponent(TZ)}&timeMin=${from}T00:00:00%2B09:00&timeMax=${to}T23:59:59%2B09:00`;
     const r=await fetch(u);if(!r.ok)throw new Error(r.status);
@@ -26,7 +29,7 @@ async function load(from,to){
       }else ev.push({date:e.start.dateTime.slice(0,10),time:e.start.dateTime.slice(11,16),end:e.end.dateTime.slice(11,16),title:t,cat,link:e.htmlLink});
     });
     return cache[k]={ev,src:'google'};
-  }catch(e){return cache[k]={ev:fallback(),src:'error'}}
+  }catch(e){return cache[k]={ev:await fallback(),src:'error'}}
 }
 
 export function renderCalendar(){
