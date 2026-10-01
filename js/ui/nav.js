@@ -8,11 +8,9 @@ export function initNav(){
         <div class="links">
           <a href="#/calendar">수업 캘린더</a>
           <a href="#/music">Music Lab</a>
-          <a href="waveform/">Waveform Lab</a>
+          <a href="#/waveform">Waveform Lab</a>
           <a href="#/step-lab">Step Lab</a>
           <a href="#/musicality">Musicality</a>
-          <a href="#/practica">Practica</a>
-          <a href="#/training">Training</a>
           <a href="#/competition">Competition</a>
         </div>
       </div>

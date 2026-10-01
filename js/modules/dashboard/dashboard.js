@@ -1,6 +1,4 @@
-const c=(t,d,l,external=false)=>external
-  ? `<a class="card tool" href="${l}"><h3>${t}</h3><p class="muted">${d}</p><span class="arrow">↗</span></a>`
-  : `<a class="card tool" href="${l}"><h3>${t}</h3><p class="muted">${d}</p><span class="arrow">→</span></a>`;
+const c=(t,d,l)=>`<a class="card tool" href="${l}"><h3>${t}</h3><p class="muted">${d}</p><span class="arrow">→</span></a>`;
 
 export function renderDashboard(){
   document.querySelector('#app').innerHTML=`
@@ -13,14 +11,13 @@ export function renderDashboard(){
     <section class="section">
       <h2>Maximo Tango Lab</h2>
       <div class="grid">
-        ${c('수업 캘린더','정규 수업 · 트레이닝 · KTC 준비 · 휴강','#/calendar')}
-        ${c('Music Lab','음악을 듣고 분석하는 공간','#/music')}
-        ${c('Tango Waveform Lab','파형 · 쉼 · 프레이즈를 직접 표시하고 학습','waveform/',true)}
-        ${c('Step Lab','리더와 팔로워의 공간을 시각화','#/step-lab')}
-        ${c('Musicality Trainer','Walk · Pause · Texture 미션','#/musicality')}
-        ${c('Practica','Ronda Timer와 실전 연습','#/practica')}
-        ${c('Competition Planner','13주 대회 준비를 관리','#/competition')}
-        ${c('Training','개인 연습 기록과 루틴 관리','#/training')}
+        ${c('수업 캘린더','Google Calendar 기반 강습 일정','#/calendar')}
+        ${c('Music Lab','음악을 듣고 감상하며 구조를 파악','#/music')}
+        ${c('Tango Waveform Lab','파형과 프레이즈를 분석해 학습','#/waveform')}
+        ${c('Step Lab','축 · 몸의 연결 · 전환을 실습하는 기초 실험실','#/step-lab')}
+        ${c('Musicality Trainer','Walk · Pause · Texture · Phrase 연습','#/musicality')}
+        ${c('Competition Planner','13주 KTC 준비 커리큘럼 관리','#/competition')}
       </div>
-    </section>`;
+    </section>
+  `;
 }
