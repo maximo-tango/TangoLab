@@ -17,7 +17,8 @@ export function renderCompetition(){
   app.innerHTML=`<section class="page">
   <div class="hero" style="padding:35px 0 20px"><span class="eyebrow">COMPETITION PLANNER</span>
   <h1 style="font-size:clamp(2.4rem,6vw,4.8rem)">KTC 피스타<br><span class="gold">대회준비반</span></h1>
-  <p class="muted">5구간 · 13회 · 중간 점검 3회 — 2026.11.15 ~ 2027.02.21</p></div>
+  <p class="muted">5구간 · 13회 · 중간 점검 3회 — 2026.11.15 ~ 2027.02.21</p>
+  <a class="score-entry" href="#/competition-score">커플별 시뮬레이션 평가 <span aria-hidden="true">→</span></a></div>
   <div class="stats">
    <div class="stat"><span>KTC 대회까지</span><strong>${dday>0?'D-'+dday:dday===0?'D-DAY':'종료'}</strong></div>
    <div class="stat"><span>다음 수업</span><strong>${cur.n}회 · ${fmt(cur.date).split(' ')[0]}</strong></div>
