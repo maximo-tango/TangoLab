@@ -14,22 +14,25 @@
 ## 주요 기능
 
 ### 1. 수업 캘린더
-Google Calendar 임베드를 사용해 강습 일정과 대회 준비 일정을 바로 확인할 수 있습니다.
+오늘 날짜로 열리는 월간 달력입니다. 구글 캘린더 일정을 Calendar API로 읽어 표시하고(`js/config.js`의 `API_KEY` 필요), 키가 없으면 `js/data/classes.js`의 저장된 일정을 보여줍니다. 카테고리 필터, 날짜별 상세, KTC 회차 연동을 지원합니다.
 
 ### 2. Music Lab
-브라우저에서 음악 파일을 재생하며 탱고의 리듬과 Phrase를 살펴보는 도구입니다.
+곡 파형 위에 프레이즈 · 쉼 · 마무리를 표시하는 학습 도구입니다. 자동 분석으로 쉼/프레이즈 후보를 먼저 표시해 줍니다.
 
-### 3. Waveform Lab
-파형을 통해 쉼, 프레이즈, 마무리 지점을 시각적으로 확인하고 분석하는 기능입니다.
+### 3. Practice Lab
+KTC 회차(구간)의 훈련 포인트로 연습 루틴을 만들고, 블록별 타이머와 연습 시간 기록(최근 14일, 연속 일수)을 제공합니다.
 
-### 4. Step Lab
-아르헨티나 탱고에서 가장 중요한 축, 연결, 턴, 공간 활용을 실습하는 실험실입니다.
+### 4. Rhythm Lab
+밀롱가 · 발스 · 탱고 박자 메트로놈과, 정박 ↔ 반박 ↔ 4박 빠우사 완급 전환 드릴을 제공합니다.
 
-### 5. Musicality Trainer
-Walk, Pause, Texture, Phrase, Rhythm 같은 음악적 요소를 점검하는 훈련 기능입니다.
+### 5. KTC 대회준비반
+`js/data/curriculum.js`(엑셀 원본 기준) 5구간 13회 커리큘럼, 회차별 체크리스트, 중간 점검 자가평가, 메모를 관리합니다.
 
-### 6. Competition Planner
-13주 KTC 대비 커리큘럼을 기준으로 개인 체크리스트를 관리합니다.
+## 구글 캘린더 연동 설정
+
+1. Google Cloud Console에서 Calendar API를 사용 설정하고 API 키를 발급합니다 (HTTP 리퍼러를 배포 주소로 제한 권장).
+2. 캘린더를 공개로 설정합니다.
+3. `js/config.js`의 `API_KEY`에 키를 넣습니다.
 
 ## 전체 구조
 
@@ -53,13 +56,11 @@ TangoLab/
 │  │  ├─ dashboard/
 │  │  │  └─ dashboard.js   # 메인 대시보드
 │  │  ├─ music/
-│  │  │  └─ music.js       # Music Lab
-│  │  ├─ musicality/
-│  │  │  └─ musicality.js  # Musicality Trainer
-│  │  ├─ step-lab/
-│  │  │  └─ stepLab.js     # Step Lab
-│  │  └─ waveform/
-│  │     └─ waveform.js    # 파형 분석 모듈
+│  │  │  └─ music.js       # Music Lab (파형 분석)
+│  │  ├─ practice/
+│  │  │  └─ practice.js    # Practice Lab
+│  │  └─ rhythm/
+│  │     └─ rhythm.js      # Rhythm Lab
 │  └─ ui/
 │     └─ nav.js            # 네비게이션
 └─ ...
@@ -86,13 +87,6 @@ http://localhost:8000/
 2. GitHub에 푸시
 3. 저장소 설정 → Pages
 4. 정적 사이트 제공 설정
-
-## 변경 사항 반영 포인트
-
-- 수업 일정: Google Calendar 임베드 연결
-- Step Lab: 축/연결/턴/공간 활용 중심으로 재설계
-- Competition Planner: 13주 KTC 대비 커리큘럼 기반
-- TRAINING / PRACTICA 기능은 현재 구조에서 제외
 
 ## 요약
 

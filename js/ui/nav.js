@@ -8,10 +8,9 @@ export function initNav(){
         <div class="links">
           <a href="#/calendar">수업 캘린더</a>
           <a href="#/music">Music Lab</a>
-          <a href="#/waveform">Waveform Lab</a>
-          <a href="#/step-lab">Step Lab</a>
-          <a href="#/musicality">Musicality</a>
-          <a href="#/competition">Competition</a>
+          <a href="#/practice">Practice</a>
+          <a href="#/rhythm">Rhythm</a>
+          <a href="#/competition">KTC 대회반</a>
         </div>
       </div>
     </div>`;
@@ -19,6 +18,6 @@ export function initNav(){
   document.querySelector('#footer').innerHTML=`
     <div class="footer">
       <img src="assets/images/maximo-tango.png" alt="MAXIMO TANGO" class="footer-logo">
-      <span>MAXIMO TANGO LAB · v0.3</span>
+      <span>MAXIMO TANGO LAB · v0.4</span>
     </div>`;
 }
