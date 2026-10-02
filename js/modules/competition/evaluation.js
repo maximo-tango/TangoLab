@@ -110,9 +110,13 @@ export function renderCompetitionScore(){
       <div class="score-meta">
         <label>평가 날짜<input name="date" type="date" value="${localDate()}" required></label>
         <input name="coupleCount" type="hidden" value="12">
-        <button type="button" class="score-load" id="load-date">수강생·날짜 불러오기</button>
+        <button type="button" class="score-load" id="load-date">평가 조회</button>
       </div>
       <p class="score-load-hint">수강생 시트의 커플 이름과 선택 날짜의 평가 기록을 불러옵니다.</p>
+      <section class="student-view" aria-label="커플별 평가 결과">
+        <nav class="student-couple-list" id="student-couple-list" aria-label="평가 완료 커플"></nav>
+        <div class="student-score-detail" id="student-score-detail" aria-live="polite"><p class="muted">평가 조회를 눌러 결과를 불러오세요.</p></div>
+      </section>
       <div class="score-table-scroll" id="score-table-scroll"><table class="score-matrix"><thead><tr><th id="couple-column-heading" class="matrix-couple">커플</th>${categories.map(category=>`<th><strong>${esc(category.name)} (10)</strong><small>참고: ${category.items.map(esc).join(' · ')}</small></th>`).join('')}</tr></thead><tbody id="couple-rows"></tbody></table></div>
       <div class="score-submit"><div><span id="batch-progress">완료 0 / 12커플</span><strong><output id="score-total">—</output> <small>평균 / 40</small></strong></div><button type="submit" id="score-save">평가 결과 한 번에 저장</button></div>
       <p class="score-status" id="score-status" role="status" aria-live="polite">저장하려면 Google 계정 로그인이 필요합니다.</p>
@@ -126,8 +130,11 @@ export function renderCompetitionScore(){
   const loadButton=app.querySelector('#load-date');
   const coupleRows=app.querySelector('#couple-rows');
   const scoreTable=app.querySelector('.score-matrix');
+  const studentCoupleList=app.querySelector('#student-couple-list');
+  const studentScoreDetail=app.querySelector('#student-score-detail');
   const progress=app.querySelector('#batch-progress');
   const couples=coupleLabels.map(label=>newCouple(`${label} 커플`));
+  let selectedStudentIndex=-1;
   let isSaving=false;
   let isLoading=false;
   let savedSnapshot='';
@@ -161,7 +168,22 @@ export function renderCompetitionScore(){
   };
   const renderTable=()=>{
     const count=Number(form.elements.coupleCount.value);
-    coupleRows.innerHTML=couples.slice(0,count).map((couple,index)=>`<tr data-couple-index="${index}"><th scope="row" class="matrix-couple"><input id="couple-name-${index}" class="matrix-name-input" type="text" maxlength="40" value="${esc(couple.label)}" aria-labelledby="couple-column-heading"></th>${categories.map((category,categoryIndex)=>`<td><div class="matrix-cell"><input id="couple-${index}-score-${categoryIndex}" class="matrix-score" data-category-index="${categoryIndex}" type="number" min="0" max="10" step="0.5" inputmode="decimal" value="${esc(couple.scores[categoryIndex])}" aria-label="점수 입력" required><details class="matrix-feedback"><summary>피드백</summary><textarea id="couple-${index}-feedback-${categoryIndex}" class="matrix-feedback-input" data-category-index="${categoryIndex}" maxlength="1000" rows="3" placeholder="피드백" aria-label="피드백 입력">${esc(couple.feedback[categoryIndex])}</textarea></details></div></td>`).join('')}</tr>`).join('');
+    coupleRows.innerHTML=couples.slice(0,count).map((couple,index)=>`<tr data-couple-index="${index}"><th scope="row" class="matrix-couple"><input id="couple-name-${index}" class="matrix-name-input" type="text" maxlength="40" value="${esc(couple.label)}" aria-labelledby="couple-column-heading"></th>${categories.map((category,categoryIndex)=>`<td><div class="matrix-cell"><input id="couple-${index}-score-${categoryIndex}" class="matrix-score" data-category-index="${categoryIndex}" type="number" min="0" max="10" step="0.5" inputmode="decimal" value="${esc(couple.scores[categoryIndex])}" aria-label="점수 입력"><details class="matrix-feedback"><summary>피드백</summary><textarea id="couple-${index}-feedback-${categoryIndex}" class="matrix-feedback-input" data-category-index="${categoryIndex}" maxlength="1000" rows="3" placeholder="피드백" aria-label="피드백 입력">${esc(couple.feedback[categoryIndex])}</textarea></details></div></td>`).join('')}</tr>`).join('');
+  };
+  const renderStudentView=()=>{
+    const evaluated=couples.map((couple,index)=>({couple,index,total:coupleTotal(couple)})).filter(item=>item.total!==null);
+    if(!evaluated.some(item=>item.index===selectedStudentIndex))selectedStudentIndex=evaluated[0]?.index??-1;
+    studentCoupleList.innerHTML=evaluated.map(item=>`<button type="button" class="student-couple ${item.index===selectedStudentIndex?'is-active':''}" data-student-index="${item.index}" aria-pressed="${item.index===selectedStudentIndex}"><span>${esc(item.couple.label)}</span><small>${formatScore(item.total)}점</small></button>`).join('');
+    studentCoupleList.querySelectorAll('[data-student-index]').forEach(button=>button.addEventListener('click',()=>{
+      selectedStudentIndex=Number(button.dataset.studentIndex);
+      renderStudentView();
+    }));
+    if(selectedStudentIndex<0){
+      studentScoreDetail.innerHTML='<p class="muted">선택한 날짜에 평가된 커플이 없습니다.</p>';
+      return;
+    }
+    const couple=couples[selectedStudentIndex];
+    studentScoreDetail.innerHTML=`<header class="student-score-heading"><h2>${esc(couple.label)}</h2><strong>${formatScore(coupleTotal(couple))} <small>/ 40</small></strong></header><div class="student-score-list">${categories.map((category,index)=>`<section class="student-score-row"><div><h3>${esc(category.name)}</h3><p>${category.items.map(esc).join(' · ')}</p></div><strong>${formatScore(Number(couple.scores[index]))}<small>/ 10</small></strong><p class="student-feedback">${esc(couple.feedback[index]||'피드백 없음')}</p></section>`).join('')}</div>`;
   };
   const readSheet=async(createIfMissing=false)=>{
     const metadata=await sheetsApi(`${spreadsheetUrl()}?fields=${encodeURIComponent('sheets.properties.title')}`);
@@ -229,12 +251,13 @@ export function renderCompetitionScore(){
       form.elements.coupleCount.value=String(Math.max(10,Math.min(12,names.length||10)));
       loadedDate=date;
       renderTable();
+      renderStudentView();
       savedContentSnapshot=contentSnapshot();
       savedSnapshot=currentSnapshot();
       status.textContent=studentNames.length?`수강생 ${studentNames.length}명과 ${date} 평가 기록 ${matches.length}건을 불러왔습니다.`:matches.length?`${date} 기록 ${matches.length}커플을 불러왔습니다. 수강생 이름을 찾지 못해 저장된 이름을 사용합니다.`:`${date} 기록이 없고 수강생 이름도 찾지 못했습니다. 수강생 시트의 이름 열을 확인해 주세요.`;
       if(missing)status.textContent+=` 저장할 때 ${evaluationSheet} 탭을 만듭니다.`;
       if(matches.length>12)status.textContent+=` 처음 12커플만 표시했습니다.`;
-    }catch(error){status.textContent=loadedStudentCount?`수강생 ${loadedStudentCount}명은 불러왔지만 평가 기록을 읽지 못했습니다: ${error.message}`:`불러오지 못했습니다: ${error.message}`}
+    }catch(error){renderStudentView();status.textContent=loadedStudentCount?`수강생 ${loadedStudentCount}명은 불러왔지만 평가 기록을 읽지 못했습니다: ${error.message}`:`불러오지 못했습니다: ${error.message}`}
     finally{isLoading=false;refreshSummary()}
   };
   form.elements.date.addEventListener('change',loadDateRecords);
@@ -249,6 +272,7 @@ export function renderCompetitionScore(){
   form.addEventListener('input',refreshSummary);
   form.addEventListener('change',refreshSummary);
   renderTable();
+  renderStudentView();
   savedContentSnapshot=contentSnapshot();
   savedSnapshot=currentSnapshot();
   refreshSummary();
@@ -256,12 +280,6 @@ export function renderCompetitionScore(){
     event.preventDefault();
     syncTableInputs();
     const count=Number(form.elements.coupleCount.value);
-    const incompleteIndex=couples.slice(0,count).findIndex(couple=>coupleTotal(couple)===null||!couple.label.trim());
-    if(incompleteIndex!==-1){
-      status.textContent=`${incompleteIndex+1}번 ${couples[incompleteIndex].label}의 네 분류 점수를 모두 입력해 주세요.`;
-      coupleRows.querySelector(`[data-couple-index="${incompleteIndex}"] .matrix-score`)?.focus();
-      return;
-    }
     if(!form.reportValidity())return;
     if(!SHEETS_CLIENT_ID||!SHEETS_SPREADSHEET_ID){status.textContent='Google Sheets 연결 설정이 필요합니다. README의 연결 절차를 확인해 주세요.';return}
     const snapshot=currentSnapshot();
@@ -275,10 +293,11 @@ export function renderCompetitionScore(){
       const updates=[];
       const appends=[];
       const appendedCouples=[];
+      const scoreValue=value=>value===''?'':Number(value);
       couples.slice(0,count).forEach(couple=>{
         const row=mode==='legacy'
-          ?[data.get('date'),couple.label,'','','',Number(couple.scores[0]),'','','',Number(couple.scores[1]),'','','',Number(couple.scores[2]),'','','',Number(couple.scores[3]),...couple.feedback]
-          :[data.get('date'),couple.label,...couple.scores.map(Number),...couple.feedback];
+          ?[data.get('date'),couple.label,'','','',scoreValue(couple.scores[0]),'','','',scoreValue(couple.scores[1]),'','','',scoreValue(couple.scores[2]),'','','',scoreValue(couple.scores[3]),...couple.feedback]
+          :[data.get('date'),couple.label,...couple.scores.map(scoreValue),...couple.feedback];
         let match=existing.find(record=>!record.used&&record.sheetRow===couple.sheetRow&&record.date===data.get('date'));
         if(!match)match=existing.find(record=>!record.used&&record.date===data.get('date')&&record.name===couple.label);
         if(match){
