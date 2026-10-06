@@ -27,6 +27,52 @@ export function normalizeName(value) {
   return String(value === null || value === undefined ? '' : value).trim().replace(/\s+/g, ' ').toLocaleLowerCase();
 }
 
+export function parseCsv(text) {
+  const rows = [];
+  let row = [];
+  let field = '';
+  let quoted = false;
+  const source = String(text || '').replace(/^\uFEFF/, '');
+
+  for (let index = 0; index < source.length; index += 1) {
+    const character = source[index];
+    if (character === '"') {
+      if (quoted && source[index + 1] === '"') {
+        field += '"';
+        index += 1;
+      } else {
+        quoted = !quoted;
+      }
+    } else if (!quoted && character === ',') {
+      row.push(field);
+      field = '';
+    } else if (!quoted && (character === '\n' || character === '\r')) {
+      if (character === '\r' && source[index + 1] === '\n') index += 1;
+      row.push(field);
+      rows.push(row);
+      row = [];
+      field = '';
+    } else {
+      field += character;
+    }
+  }
+
+  if (field !== '' || row.length) {
+    row.push(field);
+    rows.push(row);
+  }
+  return rows;
+}
+
+async function readPublicSheet(tab) {
+  const url = `https://docs.google.com/spreadsheets/d/${encodeURIComponent(SHEETS_SPREADSHEET_ID)}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(tab)}`;
+  const response = await fetch(url, { credentials: 'omit' });
+  if (!response.ok) throw new Error(`공개 시트 읽기 실패 (${response.status})`);
+  const text = await response.text();
+  if (/^\s*<!doctype html/i.test(text)) throw new Error('시트가 링크가 있는 사용자에게 읽기로 공유되어 있는지 확인해 주세요.');
+  return parseCsv(text);
+}
+
 export function parseStudentNames(rows) {
   if (!rows.length) return [];
   const headers = (rows[0] || []).map(value => String(value === null || value === undefined ? '' : value).trim().toLocaleLowerCase().replace(/\s+/g, ''));
@@ -124,6 +170,16 @@ export async function sheetsApi(url, options = {}) {
 }
 
 export async function readEvaluationSheet(createIfMissing = false) {
+  if (!createIfMissing) {
+    const values = await readPublicSheet(evaluationSheet);
+    const header = values[0] || [];
+    const matches = expected => expected.every((label, index) => String(header[index] === null || header[index] === undefined ? '' : header[index]).trim() === label);
+    if (!header.length) return { values: [sheetHeaders], mode: 'simple', missing: true };
+    if (matches(sheetHeaders)) return { values, mode: 'simple' };
+    if (matches(legacySheetHeaders)) return { values, mode: 'legacy' };
+    throw new Error(`${evaluationSheet} 탭의 첫 행이 맞지 않습니다. 새 10열 형식 또는 이전 22열 형식을 확인해 주세요.`);
+  }
+
   const metadata = await sheetsApi(`${spreadsheetUrl()}?fields=${encodeURIComponent('sheets.properties.title')}`);
   const exists = metadata.sheets && metadata.sheets.some(sheet => sheet.properties && sheet.properties.title === evaluationSheet);
 
@@ -160,8 +216,7 @@ export async function readEvaluationSheet(createIfMissing = false) {
 }
 
 export async function readStudentNames() {
-  const result = await sheetsApi(`${sheetUrl('수강생', 'A1:Z500')}?valueRenderOption=UNFORMATTED_VALUE`);
-  return parseStudentNames(result.values || []);
+  return parseStudentNames(await readPublicSheet('수강생'));
 }
 
 export async function saveEvaluationRows(rows) {

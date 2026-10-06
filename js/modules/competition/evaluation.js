@@ -21,15 +21,9 @@ const coupleLabels = 'ABCDEFGHIJKL'.split('');
 const checkpointDates = ['2026-12-06', '2026-12-20', '2027-01-17', '2027-02-21'];
 
 const esc = s => String(s).replace(/[&<>\"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
-const toDateValue = value => new Date(`${value}T00:00:00`);
 const localDate = () => {
   const d = new Date();
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-};
-const nextCheckpointDate = () => {
-  const todayValue = toDateValue(localDate());
-  const match = checkpointDates.find(date => toDateValue(date) >= todayValue);
-  return match || checkpointDates[checkpointDates.length - 1];
 };
 const newCouple = label => ({ label, scores: ['', '', '', ''], feedback: ['', '', '', ''], sheetRow: null });
 
@@ -40,7 +34,7 @@ export function renderCompetitionScore(){
     <header class="score-heading"><span class="eyebrow">KTC SIMULATION</span><h1>커플별 평가</h1><p class="muted">커플별 행에서 네 분류 점수를 입력합니다. 세부 항목은 참고 내용입니다.</p></header>
     <form id="evaluation-form" class="score-form">
       <div class="score-meta">
-        <label>평가 날짜<input name="date" type="date" value="${nextCheckpointDate()}" required></label>
+        <label>평가 날짜<input name="date" type="date" value="${localDate()}" required></label>
         <input name="coupleCount" type="hidden" value="12">
         <button type="button" class="score-load" id="load-date">평가 조회</button>
       </div>
