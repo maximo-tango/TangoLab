@@ -18,17 +18,18 @@ export const sheetDate = value => {
   if (typeof value === 'number' && Number.isFinite(value)) {
     return new Date(Date.UTC(1899, 11, 30) + Math.floor(value) * 864e5).toISOString().slice(0, 10);
   }
-  const match = String(value ?? '').trim().match(/^(\d{4})[-/.]\s*(\d{1,2})[-/.]\s*(\d{1,2})/);
-  return match ? `${match[1]}-${match[2].padStart(2, '0')}-${match[3].padStart(2, '0')}` : String(value ?? '').trim();
+  const clean = value === null || value === undefined ? '' : String(value);
+  const match = clean.trim().match(/^(\d{4})[-/.]\s*(\d{1,2})[-/.]\s*(\d{1,2})/);
+  return match ? `${match[1]}-${match[2].padStart(2, '0')}-${match[3].padStart(2, '0')}` : clean.trim();
 };
 
 export function normalizeName(value) {
-  return String(value ?? '').trim().replace(/\s+/g, ' ').toLocaleLowerCase();
+  return String(value === null || value === undefined ? '' : value).trim().replace(/\s+/g, ' ').toLocaleLowerCase();
 }
 
 export function parseStudentNames(rows) {
   if (!rows.length) return [];
-  const headers = (rows[0] || []).map(value => String(value ?? '').trim().toLocaleLowerCase().replace(/\s+/g, ''));
+  const headers = (rows[0] || []).map(value => String(value === null || value === undefined ? '' : value).trim().toLocaleLowerCase().replace(/\s+/g, ''));
   const find = pattern => headers.findIndex(value => pattern.test(value));
   const coupleColumn = find(/^(커플명|커플이름|커플|팀명|팀)$/);
   const leaderColumn = find(/리더|남자|남성|leader/);
@@ -37,7 +38,7 @@ export function parseStudentNames(rows) {
   const hasHeader = coupleColumn >= 0 || leaderColumn >= 0 || followerColumn >= 0 || nameColumn >= 0;
   const data = rows.slice(hasHeader ? 1 : 0);
   const names = data.map(row => {
-    const value = column => String(row[column] ?? '').trim();
+    const value = column => String(row[column] === null || row[column] === undefined ? '' : row[column]).trim();
     if (coupleColumn >= 0) return value(coupleColumn);
     if (leaderColumn >= 0 && followerColumn >= 0) return [value(leaderColumn), value(followerColumn)].filter(Boolean).join(' / ');
     if (nameColumn >= 0) return value(nameColumn);
@@ -50,7 +51,7 @@ export function parseStudentNames(rows) {
 export const getAccessToken = () => {
   if (accessToken && Date.now() < accessTokenExpiresAt) return Promise.resolve(accessToken);
   accessToken = '';
-  const oauth = window.google?.accounts?.oauth2;
+  const oauth = window.google && window.google.accounts ? window.google.accounts.oauth2 : null;
   if (!oauth) return Promise.reject(new Error('Google 로그인 서비스를 불러오지 못했습니다. 페이지를 새로고침해 주세요.'));
 
   if (!tokenClient) {
@@ -64,19 +65,19 @@ export const getAccessToken = () => {
         tokenReject = null;
         tokenRequest = null;
         if (response.error) {
-          reject?.(new Error(response.error_description || response.error));
+          if (reject) reject(new Error(response.error_description || response.error));
           return;
         }
         accessToken = response.access_token;
         accessTokenExpiresAt = Date.now() + (Number(response.expires_in) || 3600) * 1000 - 60000;
-        resolve?.(accessToken);
+        if (resolve) resolve(accessToken);
       },
       error_callback: error => {
         const reject = tokenReject;
         tokenResolve = null;
         tokenReject = null;
         tokenRequest = null;
-        reject?.(new Error(error.message || 'Google 로그인을 완료하지 못했습니다.'));
+        if (reject) reject(new Error(error.message || 'Google 로그인을 완료하지 못했습니다.'));
       }
     });
   }
@@ -96,7 +97,7 @@ export const getAccessToken = () => {
     tokenResolve = null;
     tokenReject = null;
     tokenRequest = null;
-    reject?.(error);
+    if (reject) reject(error);
   }
 
   return request;
@@ -115,7 +116,8 @@ export async function sheetsApi(url, options = {}) {
       accessToken = '';
       accessTokenExpiresAt = 0;
     }
-    throw new Error(`${result.error?.message || `Google Sheets API 오류 (${response.status})`} (HTTP ${response.status})`);
+    const message = result && result.error && result.error.message ? result.error.message : `Google Sheets API 오류 (${response.status})`;
+    throw new Error(`${message} (HTTP ${response.status})`);
   }
 
   return result;
@@ -123,7 +125,7 @@ export async function sheetsApi(url, options = {}) {
 
 export async function readEvaluationSheet(createIfMissing = false) {
   const metadata = await sheetsApi(`${spreadsheetUrl()}?fields=${encodeURIComponent('sheets.properties.title')}`);
-  const exists = metadata.sheets?.some(sheet => sheet.properties?.title === evaluationSheet);
+  const exists = metadata.sheets && metadata.sheets.some(sheet => sheet.properties && sheet.properties.title === evaluationSheet);
 
   if (!exists && !createIfMissing) return { values: [sheetHeaders], mode: 'simple', missing: true };
 
@@ -150,7 +152,7 @@ export async function readEvaluationSheet(createIfMissing = false) {
     return { values: [sheetHeaders], mode: 'simple', created };
   }
 
-  const matches = expected => expected.every((label, index) => String(header[index] ?? '').trim() === label);
+  const matches = expected => expected.every((label, index) => String(header[index] === null || header[index] === undefined ? '' : header[index]).trim() === label);
   if (matches(sheetHeaders)) return { values, mode: 'simple', created };
   if (matches(legacySheetHeaders)) return { values, mode: 'legacy', created };
 
@@ -171,8 +173,8 @@ export async function saveEvaluationRows(rows) {
 
   rows.forEach(couple => {
     const row = mode === 'legacy'
-      ? [couple.date, couple.label, '', '', '', couple.scores[0] ?? '', '', '', '', couple.scores[1] ?? '', '', '', '', couple.scores[2] ?? '', '', '', '', couple.scores[3] ?? '', ...couple.feedback]
-      : [couple.date, couple.label, ...(couple.scores || []).map(score => score ?? ''), ...(couple.feedback || [])];
+      ? [couple.date, couple.label, '', '', '', couple.scores[0] === null || couple.scores[0] === undefined ? '' : couple.scores[0], '', '', '', couple.scores[1] === null || couple.scores[1] === undefined ? '' : couple.scores[1], '', '', '', couple.scores[2] === null || couple.scores[2] === undefined ? '' : couple.scores[2], '', '', '', couple.scores[3] === null || couple.scores[3] === undefined ? '' : couple.scores[3], ...couple.feedback]
+      : [couple.date, couple.label, ...(couple.scores || []).map(score => score === null || score === undefined ? '' : score), ...(couple.feedback || [])];
 
     let match = existing.find(record => !record.used && record.sheetRow === couple.sheetRow && record.date === couple.date);
     if (!match) match = existing.find(record => !record.used && record.date === couple.date && normalizeName(record.name) === normalizeName(couple.label));
@@ -202,7 +204,8 @@ export async function saveEvaluationRows(rows) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ majorDimension: 'ROWS', values: appends })
     });
-    const firstRow = Number(result.updates?.updatedRange?.match(/!A(\d+)/)?.[1]);
+    const updatedRange = result && result.updates && result.updates.updatedRange ? result.updates.updatedRange : '';
+    const firstRow = Number((updatedRange.match(/!A(\d+)/) || [])[1]);
     if (firstRow) appendedCouples.forEach((couple, index) => { couple.sheetRow = firstRow + index; });
   }
 

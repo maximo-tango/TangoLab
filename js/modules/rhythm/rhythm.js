@@ -37,9 +37,15 @@ export function renderRhythm(){
   }
   function step(){
     const d=60/bpm;
-    if(left<=0){const was=ph;pick();var boom=was==='pause'&&ph!=='pause'}
+    let boom = false;
+    if(left<=0){const was=ph;pick();boom=was==='pause'&&ph!=='pause';}
     const acc=pos===0;
-    if(ph!=='pause'){click(next,acc||boom?1100:760,acc||boom?.35:.22);if(ph==='half')click(next+d/2,520,.1)}
+    if(ph!=='pause'){
+      const freq = (acc || boom) ? 1100 : 760;
+      const gain = (acc || boom) ? 0.35 : 0.22;
+      click(next,freq,gain);
+      if(ph==='half')click(next+d/2,520,.1)
+    }
     q.push({t:next,pos,ph,acc});pos=(pos+1)%meter;left--;next+=d;
   }
   function frame(){

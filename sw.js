@@ -1,4 +1,4 @@
-const CACHE_NAME = 'tango-lab-v1';
+const CACHE_NAME = 'tango-lab-v2';
 const APP_SHELL = [
   './',
   './index.html',
@@ -27,17 +27,29 @@ self.addEventListener('activate', event => {
 });
 
 self.addEventListener('fetch', event => {
-  if (event.request.method !== 'GET') return;
+  const request = event.request;
+  if (request.method !== 'GET') return;
+
+  const url = new URL(request.url);
+  if (!['http:', 'https:'].includes(url.protocol) || url.origin !== self.location.origin) return;
+
+  const isDocument = request.mode === 'navigate' || request.destination === 'document';
+
   event.respondWith(
-    caches.match(event.request).then(cached => {
+    (isDocument ? fetch(request).then(response => {
+      const copy = response.clone();
+      caches.open(CACHE_NAME).then(cache => cache.put(request, copy)).catch(() => {});
+      return response;
+    }).catch(() => caches.match(request)) : caches.match(request).then(cached => {
       if (cached) return cached;
-      return fetch(event.request)
-        .then(response => {
-          const copy = response.clone();
-          caches.open(CACHE_NAME).then(cache => cache.put(event.request, copy));
+      return fetch(request).then(response => {
+        if (!response || response.status !== 200 || response.type === 'opaque') {
           return response;
-        })
-        .catch(() => cached);
-    })
+        }
+        const copy = response.clone();
+        caches.open(CACHE_NAME).then(cache => cache.put(request, copy)).catch(() => {});
+        return response;
+      }).catch(() => cached);
+    }))
   );
 });

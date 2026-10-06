@@ -28,7 +28,8 @@ const localDate = () => {
 };
 const nextCheckpointDate = () => {
   const todayValue = toDateValue(localDate());
-  return checkpointDates.find(date => toDateValue(date) >= todayValue) || checkpointDates.at(-1);
+  const match = checkpointDates.find(date => toDateValue(date) >= todayValue);
+  return match || checkpointDates[checkpointDates.length - 1];
 };
 const newCouple = label => ({ label, scores: ['', '', '', ''], feedback: ['', '', '', ''], sheetRow: null });
 
@@ -104,7 +105,9 @@ export function renderCompetitionScore(){
   };
   const renderStudentView=()=>{
     const evaluated=couples.map((couple,index)=>({couple,index,total:coupleTotal(couple)})).filter(item=>item.total!==null);
-    if(!evaluated.some(item=>item.index===selectedStudentIndex))selectedStudentIndex=evaluated[0]?.index??-1;
+    if(!evaluated.some(item=>item.index===selectedStudentIndex)){
+      selectedStudentIndex = evaluated.length ? evaluated[0].index : -1;
+    }
     studentCoupleList.innerHTML=evaluated.map(item=>`<button type="button" class="student-couple ${item.index===selectedStudentIndex?'is-active':''}" data-student-index="${item.index}" aria-pressed="${item.index===selectedStudentIndex}"><span>${esc(item.couple.label)}</span><small>${formatScore(item.total)}점</small></button>`).join('');
     studentCoupleList.querySelectorAll('[data-student-index]').forEach(button=>button.addEventListener('click',()=>{
       selectedStudentIndex=Number(button.dataset.studentIndex);
@@ -118,10 +121,10 @@ export function renderCompetitionScore(){
     const history = historyByCouple[normalizeName(couple.label)] || [];
     const trendRows = categories.map((category, index) => {
       const values = history
-        .map(entry => ({ date: entry.date, value: Number(entry.scores[index] ?? 0) || 0 }))
+        .map(entry => ({ date: entry.date, value: Number(entry.scores[index] !== undefined && entry.scores[index] !== null ? entry.scores[index] : 0) || 0 }))
         .filter(entry => entry.date && Number.isFinite(entry.value));
-      const latest = values.at(-1)?.value ?? Number(couple.scores[index] || 0) || 0;
-      const previous = values.at(-2)?.value ?? latest;
+      const latest = values.length ? values[values.length - 1].value : Number(couple.scores[index] || 0) || 0;
+      const previous = values.length > 1 ? values[values.length - 2].value : latest;
       const delta = latest - previous;
       const trace = values.length ? values.map(v => `<span class="trend-dot" style="--bar:${Math.max(12, (v.value / 10) * 100)}%" title="${v.date}: ${v.value}"></span>`).join('') : '<span class="trend-empty">기록 없음</span>';
       return `<div class="trend-row"><div><strong>${esc(category.name)}</strong><small>${latest.toFixed(1)}점 ${delta >= 0 ? '+' : ''}${delta.toFixed(1)}</small></div><div class="trend-bar-group">${trace}</div></div>`;
