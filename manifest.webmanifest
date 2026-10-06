@@ -1,0 +1,13 @@
+{
+  "name": "Maximo Tango Lab",
+  "short_name": "Tango Lab",
+  "description": "아르헨티나 탱고 수업 준비와 연습, 평가를 한 곳에서 관리하는 정적 웹앱",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#0b0c0e",
+  "theme_color": "#0b0c0e",
+  "icons": [
+    { "src": "assets/favicon/favicon.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "assets/favicon/apple-touch-icon.png", "sizes": "180x180", "type": "image/png" }
+  ]
+}
