@@ -6,6 +6,7 @@ import{sessions}from'../../data/curriculum.js';
 import{lineChart,legend}from'../../ui/charts.js';
 import{linkFor,copy}from'../../core/share.js';
 
+<<<<<<< HEAD
 const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const key=S.normalizeName;
 const localDate=()=>{const d=new Date();return`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`};
@@ -23,6 +24,45 @@ export function renderCompetitionScore(){
     date=n.date;note=`가장 가까운 점검일(${n.short})로 맞췄어요. 다른 날을 평가하려면 날짜를 바꿔 주세요.`;
   }
   let couples=[],students=[],all=[],loaded=false,busy=false,saved='',sel='',cmpA='',cmpB='',touched=false,curLink='',seq=0;
+=======
+const categories = [
+  { name: '자세와 축의 안정성', items: ['(기세)턱/시선 처리', '아브라소/자세', '피봇 & 턴 안정성'] },
+  { name: '테크닉', items: ['걷기와 멈춤', '회전, (사까다)히로', '강약 조절'] },
+  { name: '음악적 해석과 뉘앙스', items: ['프레이즈', '빠우사', '악단별 특징 표현'] },
+  { name: '론다운용', items: ['간격유지', '공간운용(이탈)', '진행능력'] }
+];
+const coupleLabels = 'ABCDEFGHIJKL'.split('');
+const checkpointDates = ['2026-12-06', '2026-12-20', '2027-01-17', '2027-02-21'];
+
+const esc = s => String(s).replace(/[&<>\"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const localDate = () => {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+};
+const newCouple = label => ({ label, scores: ['', '', '', ''], feedback: ['', '', '', ''], sheetRow: null });
+
+export function renderCompetitionScore(){
+  const app=mount();
+  app.innerHTML=`<section class="page score-page">
+    <a class="score-back" href="#/competition">← 대회준비반</a>
+    <header class="score-heading"><span class="eyebrow">KTC SIMULATION</span><h1>커플별 평가</h1><p class="muted">커플별 행에서 네 분류 점수를 입력합니다. 세부 항목은 참고 내용입니다.</p></header>
+    <form id="evaluation-form" class="score-form">
+      <div class="score-meta">
+        <label>평가 날짜<input name="date" type="date" value="${localDate()}" required></label>
+        <input name="coupleCount" type="hidden" value="12">
+        <button type="button" class="score-load" id="load-date">평가 조회</button>
+      </div>
+      <p class="score-load-hint">수강생 시트의 커플 이름과 선택 날짜의 평가 기록을 불러옵니다.</p>
+      <section class="student-view" aria-label="커플별 평가 결과">
+        <nav class="student-couple-list" id="student-couple-list" aria-label="평가 완료 커플"></nav>
+        <div class="student-score-detail" id="student-score-detail" aria-live="polite"><p class="muted">평가 조회를 눌러 결과를 불러오세요.</p></div>
+      </section>
+      <div class="score-table-scroll" id="score-table-scroll"><table class="score-matrix"><thead><tr><th id="couple-column-heading" class="matrix-couple">커플</th>${categories.map(category=>`<th><strong>${esc(category.name)} (10)</strong><small>참고: ${category.items.map(esc).join(' · ')}</small></th>`).join('')}</tr></thead><tbody id="couple-rows"></tbody></table></div>
+      <div class="score-submit"><div><span id="batch-progress">완료 0 / 12커플</span><strong><output id="score-total">—</output> <small>평균 / 40</small></strong></div><button type="submit" id="score-save">평가 결과 한 번에 저장</button></div>
+      <p class="score-status" id="score-status" role="status" aria-live="polite">저장하려면 Google 계정 로그인이 필요합니다.</p>
+    </form>
+  </section>`;
+>>>>>>> 0dd458d9111918d3f1b0425985b2065bcc96cd40
 
   app.innerHTML=`<section class="page score-page">
    <a class="score-back" href="#/competition">← 대회준비반</a>
