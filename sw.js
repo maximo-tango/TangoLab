@@ -1,55 +1,12 @@
-const CACHE_NAME = 'tango-lab-v2';
-const APP_SHELL = [
-  './',
-  './index.html',
-  './css/style.css',
-  './css/competition-score.css',
-  './css/responsive.css',
-  './js/app.js',
-  './manifest.webmanifest',
-  './assets/images/maximo-tango.png',
-  './assets/favicon/favicon.png',
-  './assets/favicon/apple-touch-icon.png'
-];
-
-self.addEventListener('install', event => {
-  event.waitUntil(caches.open(CACHE_NAME).then(cache => cache.addAll(APP_SHELL)));
-  self.skipWaiting();
-});
-
-self.addEventListener('activate', event => {
-  event.waitUntil(
-    caches.keys().then(keys => Promise.all(keys
-      .filter(key => key !== CACHE_NAME)
-      .map(key => caches.delete(key))))
-  );
-  self.clients.claim();
-});
-
-self.addEventListener('fetch', event => {
-  const request = event.request;
-  if (request.method !== 'GET') return;
-
-  const url = new URL(request.url);
-  if (!['http:', 'https:'].includes(url.protocol) || url.origin !== self.location.origin) return;
-
-  const isDocument = request.mode === 'navigate' || request.destination === 'document';
-
-  event.respondWith(
-    (isDocument ? fetch(request).then(response => {
-      const copy = response.clone();
-      caches.open(CACHE_NAME).then(cache => cache.put(request, copy)).catch(() => {});
-      return response;
-    }).catch(() => caches.match(request)) : caches.match(request).then(cached => {
-      if (cached) return cached;
-      return fetch(request).then(response => {
-        if (!response || response.status !== 200 || response.type === 'opaque') {
-          return response;
-        }
-        const copy = response.clone();
-        caches.open(CACHE_NAME).then(cache => cache.put(request, copy)).catch(() => {});
-        return response;
-      }).catch(() => cached);
-    }))
-  );
+// 오프라인 지원: 온라인이면 항상 최신 파일을, 오프라인이면 마지막으로 받은 파일을 보여준다
+const CACHE='tango-lab-v1';
+self.addEventListener('install',()=>self.skipWaiting());
+self.addEventListener('activate',e=>e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==CACHE).map(k=>caches.delete(k)))).then(()=>self.clients.claim())));
+self.addEventListener('fetch',e=>{
+  const r=e.request,u=new URL(r.url);
+  if(r.method!=='GET'||u.origin!==location.origin)return; // 구글 로그인/시트 요청은 건드리지 않음
+  e.respondWith(fetch(r,{cache:'no-cache'}).then(res=>{
+    if(res.ok){const c=res.clone();caches.open(CACHE).then(x=>x.put(r,c))}
+    return res;
+  }).catch(()=>caches.match(r).then(m=>m||(r.mode==='navigate'?caches.match('index.html'):Response.error()))));
 });

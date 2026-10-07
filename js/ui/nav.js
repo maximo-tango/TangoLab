@@ -18,6 +18,6 @@ export function initNav(){
   document.querySelector('#footer').innerHTML=`
     <div class="footer">
       <img src="assets/images/maximo-tango.png" alt="MAXIMO TANGO" class="footer-logo">
-      <span>MAXIMO TANGO LAB · v0.4</span>
+      <span>MAXIMO TANGO LAB · v0.5</span>
     </div>`;
 }
